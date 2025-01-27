@@ -35,7 +35,7 @@ public class UserService {
 
     public User getAuthenticatedUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUserName(username)
+        return userRepository.findByEmail(username)
                 .orElseThrow(() -> new UserServiceException(ExceptionMessages.USER_NOT_FOUND.getMessage()));
     }
 
@@ -43,5 +43,4 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserServiceException(ExceptionMessages.USER_NOT_FOUND.getMessage()));
     }
-
 }

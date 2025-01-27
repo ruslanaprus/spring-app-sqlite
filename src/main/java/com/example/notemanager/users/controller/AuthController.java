@@ -48,7 +48,7 @@ public class AuthController {
             log.info("User {} successfully logged in", email);
 
             // redirect to the home page
-            return "redirect:/index.html";
+            return "redirect:/note/list";
 
         } catch (AuthenticationException e) {
             log.error("Login failed for user {}: {}", email, e.getMessage());

@@ -1,16 +1,19 @@
 package com.example.notemanager.users.controller;
 
+import com.example.notemanager.notes.controller.NoteController;
 import com.example.notemanager.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+@ControllerAdvice(assignableTypes = {NoteController.class})
 @RequiredArgsConstructor
 public class UserNameController {
     private final UserService userService;
     private static final String DEFAULT_USER_NAME = "Guest";
 
-    @ModelAttribute("email")
+    @ModelAttribute("username")
     public String getUsername() {
         if (SecurityContextHolder.getContext().getAuthentication() != null &&
                 SecurityContextHolder.getContext().getAuthentication().isAuthenticated() &&

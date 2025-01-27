@@ -16,7 +16,7 @@
             <button class="btn btn-outline-light" type="submit">Search</button>
         </form>
         <div class="d-flex">
-            <span class="navbar-text me-3 text-white" th:text="'Logged in as: ' + ${email}"></span>
+            <span class="navbar-text me-3 text-white" th:text="'Logged in as: ' + ${username}"></span>
             <form th:action="@{/logout}" method="post" class="d-inline">
                 <button type="submit" class="btn btn-outline-light">Log out</button>
             </form>

@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -57,17 +59,23 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService(UserService userService) {
-        return username -> {
-            User user = userService.findByUserName(username);
+        return email -> {
+            User user = userService.findByEmail(email);
             if (user == null) {
                 throw new UserServiceException(ExceptionMessages.USER_NOT_FOUND.getMessage());
             }
-            log.info("Loaded user: {}", user.getUserName());
+            log.info("Loaded user: {}", user.getEmail());
             return org.springframework.security.core.userdetails.User
-                    .withUsername(user.getUserName())
+                    .withUsername(user.getEmail())
                     .password(user.getPassword())
                     .authorities(user.getRole())
                     .build();
         };
     }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
 }

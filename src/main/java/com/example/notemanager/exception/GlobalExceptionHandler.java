@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
     public String handleUserServiceException(UserServiceException exception, Model model) {
         log.error("A domain-specific issue was detected: {}", exception.getMessage(), exception);
         model.addAttribute("message", exception.getMessage());
-        return "app/error";
+        return "note/error";
     }
 
     @ExceptionHandler(value = Throwable.class)
@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
     public String handleException(Throwable exception, Model model) {
         log.error("Unexpected error occurred: {}", exception.getMessage(), exception);
         model.addAttribute("message", "Internal Server Error");
-        return "app/error";
+        return "note/error";
     }
 
 }

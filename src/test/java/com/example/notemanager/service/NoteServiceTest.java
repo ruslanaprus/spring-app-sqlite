@@ -5,8 +5,13 @@ import com.example.notemanager.notes.exception.NoteServiceException;
 import com.example.notemanager.notes.model.Note;
 import com.example.notemanager.notes.repository.NoteRepository;
 import com.example.notemanager.notes.service.NoteService;
+import com.example.notemanager.users.model.User;
+import com.example.notemanager.users.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -18,13 +23,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class NoteServiceTest {
-    private NoteService noteService;
+    @Mock
     private NoteRepository noteRepository;
+
+    @Mock
+    private UserService userService;
+
+    @InjectMocks
+    private NoteService noteService;
+
+    private User authenticatedUser;
 
     @BeforeEach
     void setUp() {
-        noteRepository = mock(NoteRepository.class);
-        noteService = new NoteService(noteRepository);
+        MockitoAnnotations.openMocks(this);
+        authenticatedUser = User.builder().id(1L).userName("testUser").build();
+        when(userService.getAuthenticatedUser()).thenReturn(authenticatedUser);
     }
 
     @Test
@@ -32,7 +46,7 @@ class NoteServiceTest {
         PageRequest pageRequest = PageRequest.of(0, 5);
         Page<Note> emptyPage = Page.empty(pageRequest);
 
-        when(noteRepository.findAll(pageRequest)).thenReturn(emptyPage);
+        when(noteRepository.findByUser(authenticatedUser, pageRequest)).thenReturn(emptyPage);
 
         Page<Note> result = noteService.listAll(pageRequest);
 
@@ -52,7 +66,7 @@ class NoteServiceTest {
         // simulate behaviour of a Page: 2 notes on the page, pagination parameters, 3 - total number of items
         Page<Note> notePage = new PageImpl<>(List.of(note1, note2), pageRequest, 3);
 
-        when(noteRepository.findAll(pageRequest)).thenReturn(notePage);
+        when(noteRepository.findByUser(authenticatedUser, pageRequest)).thenReturn(notePage);
 
         Page<Note> result = noteService.listAll(pageRequest);
 
@@ -91,7 +105,7 @@ class NoteServiceTest {
     @Test
     void getByIdReturnsNoteIfExists() {
         Note note = Note.builder().id(1l).title("title").content("content").build();
-        when(noteRepository.findById(1L)).thenReturn(Optional.of(note));
+        when(noteRepository.findByIdAndUser(1L, authenticatedUser)).thenReturn(Optional.of(note));
 
         Note result = noteService.getById(1L);
 
@@ -101,7 +115,7 @@ class NoteServiceTest {
 
     @Test
     void getByIdThrowsExceptionIfNoteDoesNotExist() {
-        when(noteRepository.findById(999L)).thenReturn(Optional.empty());
+        when(noteRepository.findByIdAndUser(999L, authenticatedUser)).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(NoteServiceException.class, () -> noteService.getById(999L));
         assertEquals(ExceptionMessages.NOTE_NOT_FOUND.getMessage(), exception.getMessage());
@@ -109,21 +123,25 @@ class NoteServiceTest {
 
     @Test
     void updateSavesAndReturnsUpdatedNoteIfExists() {
-        Note updatedNote = Note.builder().id(1L).title("new title").content("new content").build();
+        Note existingNote = Note.builder().id(1L).title("old title").content("old content").user(authenticatedUser).build();
+        Note updatedNote = Note.builder().id(1L).title("new title").content("new content").user(authenticatedUser).build();
 
-        when(noteRepository.existsById(1L)).thenReturn(true);
+        when(noteRepository.findByIdAndUser(1L, authenticatedUser)).thenReturn(Optional.of(existingNote));
+        when(noteRepository.save(existingNote)).thenReturn(updatedNote);
 
         Note result = noteService.update(updatedNote);
 
-        verify(noteRepository).save(updatedNote);
-        assertEquals(updatedNote, result, "The updated note should be returned.");
+        assertNotNull(result);
+        assertEquals("new title", result.getTitle());
+        assertEquals("new content", result.getContent());
+        verify(noteRepository).save(existingNote);
     }
 
     @Test
     void updateThrowsIfNoteDoesNotExist() {
         Note nonExistentNote = Note.builder().id(999L).title("nonexistent").content("no content").build();
 
-        when(noteRepository.existsById(999L)).thenReturn(false);
+        when(noteRepository.findByIdAndUser(999L, authenticatedUser)).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(NoteServiceException.class, () -> noteService.update(nonExistentNote));
         assertEquals(ExceptionMessages.NOTE_NOT_FOUND.getMessage(), exception.getMessage());
@@ -131,16 +149,18 @@ class NoteServiceTest {
 
     @Test
     void deleteRemovesExistingNote() {
-        when(noteRepository.existsById(1L)).thenReturn(true);
+        Note existingNote = Note.builder().id(1L).user(authenticatedUser).build();
+
+        when(noteRepository.findByIdAndUser(1L, authenticatedUser)).thenReturn(Optional.of(existingNote));
 
         noteService.delete(1L);
 
-        verify(noteRepository).deleteById(1L);
+        verify(noteRepository).delete(existingNote);
     }
 
     @Test
     void deleteThrowsIfNoteDoesNotExist() {
-        when(noteRepository.existsById(999L)).thenReturn(false);
+        when(noteRepository.findByIdAndUser(999L, authenticatedUser)).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(NoteServiceException.class, () -> noteService.delete(999L));
         assertEquals(ExceptionMessages.NOTE_NOT_FOUND.getMessage(), exception.getMessage());

@@ -36,24 +36,24 @@ public class AuthController {
                         @RequestParam("password") String password,
                         HttpServletRequest request) {
         try {
-            // perform authentication
+            // perform authentication using provided credentials
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
             );
 
-            // store the authentication in the session
+            // store authentication in the security context and HTTP session
             SecurityContextHolder.getContext().setAuthentication(authentication);
             request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
             log.info("User {} successfully logged in", email);
 
-            // redirect to the home page
+            // redirect to the note listing page upon successful login
             return "redirect:/note/list";
 
         } catch (AuthenticationException e) {
             log.error("Login failed for user {}: {}", email, e.getMessage());
 
-            // redirect to the login page with an error message
+            // redirect to the login page with an error message in case of failure
             return "redirect:/login?error=Invalid credentials";
         }
     }
